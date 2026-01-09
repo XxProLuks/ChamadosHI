@@ -1,0 +1,20 @@
+# Usuarios do Sistema de Chamados
+# Formato: email,full_name,role,sector
+# Roles: SOLICITANTE, TECNICO, ADMIN
+
+# TÉCNICOS DE TI
+ti.tecnico1@hospital.local,Técnico TI 1,TECNICO,TI
+ti.tecnico2@hospital.local,Técnico TI 2,TECNICO,TI
+
+# ADMINISTRAÇÃO
+admin1@hospital.local,Administrador,ADMIN,Administração
+
+# SOLICITANTES - Adicione aqui os 70 funcionários
+# Exemplo:
+# funcionario1@hospital.local,Nome Completo 1,SOLICITANTE,Administração
+# funcionario2@hospital.local,Nome Completo 2,SOLICITANTE,UTI
+# funcionario3@hospital.local,Nome Completo 3,SOLICITANTE,Farmácia
+# funcionario4@hospital.local,Nome Completo 4,SOLICITANTE,Laboratório
+# funcionario5@hospital.local,Nome Completo 5,SOLICITANTE,Emergência
+# funcionario6@hospital.local,Nome Completo 6,SOLICITANTE,Recepção
+# funcionario7@hospital.local,Nome Completo 7,SOLICITANTE,Enfermaria
