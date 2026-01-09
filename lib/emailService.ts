@@ -65,7 +65,7 @@ export const emailTemplates = {
                     </div>
                 </div>
                 <div style="background: #1e293b; padding: 15px; border-radius: 0 0 10px 10px; text-align: center;">
-                    <p style="color: #94a3b8; margin: 0; font-size: 12px;">Hospital Saint Louis - Sistema de Chamados</p>
+                    <p style="color: #94a3b8; margin: 0; font-size: 12px;">Hospital de Ilhéus - Sistema de Chamados</p>
                 </div>
             </div>
         `,
@@ -90,7 +90,7 @@ export const emailTemplates = {
                     ${technicianName ? `<p style="color: #64748b; text-align: center;">Técnico responsável: <strong>${technicianName}</strong></p>` : ''}
                 </div>
                 <div style="background: #1e293b; padding: 15px; border-radius: 0 0 10px 10px; text-align: center;">
-                    <p style="color: #94a3b8; margin: 0; font-size: 12px;">Hospital Saint Louis - Sistema de Chamados</p>
+                    <p style="color: #94a3b8; margin: 0; font-size: 12px;">Hospital de Ilhéus - Sistema de Chamados</p>
                 </div>
             </div>
         `,
@@ -116,7 +116,7 @@ export const emailTemplates = {
                     </div>
                 </div>
                 <div style="background: #1e293b; padding: 15px; border-radius: 0 0 10px 10px; text-align: center;">
-                    <p style="color: #94a3b8; margin: 0; font-size: 12px;">Hospital Saint Louis - Sistema de Chamados</p>
+                    <p style="color: #94a3b8; margin: 0; font-size: 12px;">Hospital de Ilhéus - Sistema de Chamados</p>
                 </div>
             </div>
         `,
@@ -142,7 +142,7 @@ export const emailTemplates = {
                     </div>
                 </div>
                 <div style="background: #1e293b; padding: 15px; border-radius: 0 0 10px 10px; text-align: center;">
-                    <p style="color: #94a3b8; margin: 0; font-size: 12px;">Hospital Saint Louis - Sistema de Chamados</p>
+                    <p style="color: #94a3b8; margin: 0; font-size: 12px;">Hospital de Ilhéus - Sistema de Chamados</p>
                 </div>
             </div>
         `,

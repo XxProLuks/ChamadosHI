@@ -164,4 +164,4 @@ Em caso de problemas:
 
 ---
 
-© 2026 Hospital Saint Louis - Sistema de Chamados
+© 2026 Hospital de Ilhéus - Sistema de Chamados

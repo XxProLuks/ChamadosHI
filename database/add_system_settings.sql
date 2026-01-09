@@ -25,9 +25,9 @@ ON CONFLICT (key) DO NOTHING;
 -- Insert default branding settings
 INSERT INTO system_settings (key, value) VALUES
 ('branding', '{
-    "hospitalName": "Hospital Saint Louis",
+    "hospitalName": "Hospital de Ilhéus",
     "supportEmail": "suporte@hospital.com",
-    "footerText": "© 2025 Hospital Saint Louis - Todos os direitos reservados"
+    "footerText": "© 2025 Hospital de Ilhéus - Todos os direitos reservados"
 }'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
