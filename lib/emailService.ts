@@ -150,22 +150,27 @@ export const emailTemplates = {
     })
 };
 
+import { supabase } from './supabase';
+
 /**
  * Queue email for sending via Edge Function
- * In production, this would call a Supabase Edge Function that handles SMTP
+ * Calls a Supabase Edge Function that handles SMTP
  */
 export async function queueEmail(message: EmailMessage): Promise<boolean> {
     try {
-        // For now, we'll log the email - in production this would call an Edge Function
-        console.log('📧 Email queued:', {
-            to: message.to,
-            subject: message.subject
+        const { error } = await supabase.functions.invoke('send-email', {
+            body: {
+                message,
+                config: emailConfig
+            }
         });
 
-        // TODO: Implement Edge Function call for actual email sending
-        // const { data, error } = await supabase.functions.invoke('send-email', {
-        //     body: message
-        // });
+        if (error) {
+            console.error('Failed to send email via Edge Function:', error);
+            // Fallback to log for debugging
+            console.log('📧 Email content (fallback):', message);
+            return false;
+        }
 
         return true;
     } catch (error) {

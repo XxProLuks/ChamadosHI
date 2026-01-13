@@ -57,6 +57,8 @@ interface SolicitanteViewProps {
   tickets: Ticket[];
   onViewTicketDetails: (ticket: Ticket) => void;
   requesterName: string;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
 }
 
 const SolicitanteView: React.FC<SolicitanteViewProps> = ({
@@ -66,7 +68,9 @@ const SolicitanteView: React.FC<SolicitanteViewProps> = ({
   onSearchChange,
   tickets,
   onViewTicketDetails,
-  requesterName
+  requesterName,
+  hasMore,
+  onLoadMore
 }) => {
   const filteredSectors = sectors.filter(sector =>
     sector.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -148,6 +152,8 @@ const SolicitanteView: React.FC<SolicitanteViewProps> = ({
         tickets={tickets}
         onViewDetails={onViewTicketDetails}
         requesterName={requesterName}
+        hasMore={hasMore}
+        onLoadMore={onLoadMore}
       />
 
     </div>

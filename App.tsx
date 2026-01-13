@@ -16,6 +16,10 @@ import UserManager from './components/UserManager';
 import SectorManager from './components/SectorManager';
 import GlobalAlertManager from './components/GlobalAlertManager';
 import { Loader2 } from 'lucide-react';
+import notifyByEmail from './lib/emailService';
+import { useTickets } from './hooks/useTickets';
+import { useGlobalAlerts } from './hooks/useGlobalAlerts';
+import { useNotifications } from './hooks/useNotifications';
 
 // Debounce utility for search
 const useDebounce = <T,>(value: T, delay: number): T => {
@@ -38,8 +42,6 @@ const App: React.FC = () => {
   const [view, setView] = useState<ViewType>('SOLICITANTE');
   const [showDashboard, setShowDashboard] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [sectors, setSectors] = useState<Sector[]>([]);
   const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -50,8 +52,29 @@ const App: React.FC = () => {
   const [showUserManager, setShowUserManager] = useState(false);
   const [showSectorManager, setShowSectorManager] = useState(false);
   const [showGlobalAlertManager, setShowGlobalAlertManager] = useState(false);
-  const [activeAlerts, setActiveAlerts] = useState<GlobalAlert[]>([]);
-  const [previousAlertIds, setPreviousAlertIds] = useState<string[]>([]);
+
+  // Custom Hooks
+  const {
+    tickets,
+    loading: ticketsLoading,
+    hasMore,
+    fetchNextPage,
+    updateTicketStatus,
+    deleteTicket,
+    pinTicket
+  } = useTickets(session?.user.id, profile?.role);
+
+  const {
+    notifications,
+    markAllAsRead
+  } = useNotifications(session?.user.id);
+
+  const {
+    activeAlerts,
+    visibleAlerts,
+    previousAlertIds,
+    setPreviousAlertIds
+  } = useGlobalAlerts(session?.user.id);
 
   // Debounced search query (300ms delay)
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -104,116 +127,16 @@ const App: React.FC = () => {
     setLoading(false);
   };
 
-  // Data Fetching
-  useEffect((): (() => void) | void => {
-    if (session) {
-      fetchSectors();
-      fetchTickets();
-      fetchNotifications();
-
-      // Real-time Subscriptions
-      const ticketSubscription = supabase
-        .channel('tickets-channel')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, () => {
-          fetchTickets();
-        })
-        .subscribe();
-
-      const notificationSubscription = supabase
-        .channel('notifications-channel')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${session.user.id}` }, () => {
-          fetchNotifications();
-        })
-        .subscribe();
-
-      return () => {
-        ticketSubscription.unsubscribe();
-        notificationSubscription.unsubscribe();
-      };
-    }
-  }, [session]);
-
   const fetchSectors = async () => {
     const { data } = await supabase.from('sectors').select('*').order('name');
     if (data) setSectors(data);
   };
 
-  const fetchTickets = async () => {
-    const { data } = await supabase
-      .from('tickets')
-      .select(`
-        *,
-        requester:profiles!requester_id(full_name),
-        technician:profiles!technician_id(full_name, avatar_url),
-        sector:sectors(name)
-      `)
-      .order('created_at', { ascending: false });
-
-    if (data) {
-      const formattedTickets = data.map((t: any) => ({
-        ...t,
-        requester_name: t.requester?.full_name,
-        technician_name: t.technician?.full_name,
-        technician_avatar: t.technician?.avatar_url,
-        sector_name: t.sector?.name
-      }));
-      setTickets(formattedTickets);
-    }
-  };
-
-  const fetchNotifications = async () => {
-    if (!session) return;
-    const { data } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .order('created_at', { ascending: false });
-    if (data) {
-      const formatted = data.map(n => ({ ...n, read: n.is_read }));
-      setNotifications(formatted);
-    }
-  };
-
-  const fetchActiveAlerts = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('global_alerts')
-      .select('*')
-      .gt('expires_at', new Date().toISOString())
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setActiveAlerts(data);
-    }
-  }, []);
-
-  // Global Alerts Monitoring (Realtime + Backup Polling)
   useEffect(() => {
-    if (!session) return;
-
-    fetchActiveAlerts();
-
-    // Realtime Subscription
-    const alertsChannel = supabase
-      .channel('global_alerts_sync')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'global_alerts' },
-        () => {
-          fetchActiveAlerts();
-        }
-      )
-      .subscribe();
-
-    // Backup polling (60 seconds) - Realtime should handle most updates
-    const interval = setInterval(() => {
-      fetchActiveAlerts();
-    }, 60000);
-
-    return () => {
-      supabase.removeChannel(alertsChannel);
-      clearInterval(interval);
-    };
-  }, [session, fetchActiveAlerts]);
+    if (session) {
+      fetchSectors();
+    }
+  }, [session]);
 
   // Desktop notifications for new CRITICAL alerts
   useEffect(() => {
@@ -226,13 +149,7 @@ const App: React.FC = () => {
 
     newAlerts.forEach(sendDesktopNotification);
     setPreviousAlertIds(currentIds);
-  }, [activeAlerts, session]);
-
-  // Memoized visible alerts (filtered by dismissed state)
-  const visibleAlerts = useMemo(
-    () => activeAlerts.filter(alert => !isAlertDismissed(alert.id, session?.user?.id || '')),
-    [activeAlerts, session?.user?.id]
-  );
+  }, [activeAlerts, session, previousAlertIds, setPreviousAlertIds]);
 
   const handleCreateTicket = useCallback(async (newTicket: Partial<Ticket>) => {
     if (!session) return;
@@ -257,74 +174,79 @@ const App: React.FC = () => {
       setIsModalOpen(false);
       setSelectedSector(null);
       setPrefillData({});
+
+      // Notificar técnicos do setor por email
+      const { data: techs } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('role', 'TECNICO');
+
+      if (techs && techs.length > 0) {
+        const techEmails = techs.map(t => t.email).filter(Boolean) as string[];
+        const sectorName = sectors.find(s => s.id === (selectedSector?.id || newTicket.sector_id))?.name || 'Geral';
+
+        notifyByEmail.ticketCreated(
+          techEmails,
+          newTicket.title || 'Sem título',
+          'NOVO', // ID será gerado, mas notificamos o evento
+          profile?.full_name || 'Solicitante',
+          newTicket.location || 'Não informado'
+        );
+      }
     }
-  }, [session, selectedSector?.id]);
+  }, [session, selectedSector?.id, profile?.full_name, sectors]);
 
   const handleUpdateStatus = useCallback(async (id: string, status: TicketStatus) => {
     if (!session) return;
 
-    const updates: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
-    if (status === 'IN_PROGRESS' && profile?.role !== 'SOLICITANTE') {
-      updates.technician_id = session.user.id;
-    }
+    const { success } = await updateTicketStatus(id, status, session.user.id);
 
-    const { error } = await supabase
-      .from('tickets')
-      .update(updates)
-      .eq('id', id);
-
-    if (error) {
-      toast.error('Erro ao atualizar status: ' + error.message);
-    } else {
+    if (success) {
       if (selectedTicket?.id === id) {
-        setSelectedTicket(prev => prev ? { ...prev, ...updates } as Ticket : null);
+        setSelectedTicket(prev => prev ? { ...prev, status, updated_at: new Date().toISOString() } as Ticket : null);
       }
-      toast.success('Status atualizado!');
+
+      // Notificar solicitante sobre a mudança de status
+      const ticket = tickets.find(t => t.id === id);
+      if (ticket) {
+        const { data: requesterProfile } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', ticket.requester_id)
+          .single();
+
+        if (requesterProfile?.email) {
+          if (status === 'DONE') {
+            notifyByEmail.ticketCompleted(
+              requesterProfile.email,
+              ticket.title,
+              profile?.full_name || 'Técnico'
+            );
+          } else {
+            notifyByEmail.statusChanged(
+              requesterProfile.email,
+              ticket.title,
+              ticket.status,
+              status,
+              profile?.full_name || 'Técnico'
+            );
+          }
+        }
+      }
     }
-  }, [session, profile?.role, selectedTicket?.id]);
+  }, [session, profile?.full_name, selectedTicket?.id, updateTicketStatus, tickets]);
 
   const handleDeleteTicket = useCallback(async (id: string) => {
-    const { error } = await supabase
-      .from('tickets')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      toast.error('Erro ao excluir chamado: ' + error.message);
-    } else {
-      setTickets(prev => prev.filter(t => t.id !== id));
+    const { success } = await deleteTicket(id);
+    if (success && selectedTicket?.id === id) {
       setSelectedTicket(null);
-      toast.success('Chamado excluído!');
     }
-  }, []);
+  }, [deleteTicket, selectedTicket?.id]);
 
   const handlePinTicket = useCallback(async (id: string, isPinned: boolean) => {
     if (!session) return;
-
-    try {
-      const updates = {
-        is_pinned: isPinned,
-        pinned_at: isPinned ? new Date().toISOString() : undefined,
-        pinned_by: isPinned ? session.user.id : undefined
-      };
-
-      const { error } = await supabase
-        .from('tickets')
-        .update(updates)
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setTickets(prev => prev.map(t =>
-        t.id === id ? { ...t, ...updates } : t
-      ));
-
-      toast.success(isPinned ? 'Ticket fixado!' : 'Ticket desafixado!');
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Erro desconhecido';
-      toast.error('Erro ao fixar ticket: ' + msg);
-    }
-  }, [session]);
+    await pinTicket(id, isPinned, session.user.id);
+  }, [session, pinTicket]);
 
   const handleSelectSector = (sector: Sector) => {
     setSelectedSector(sector);
@@ -337,12 +259,7 @@ const App: React.FC = () => {
   };
 
   const handleNotificationClick = async () => {
-    if (!session) return;
-    await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('user_id', session.user.id);
-    fetchNotifications();
+    markAllAsRead();
   };
 
   if (loading) {
@@ -390,6 +307,8 @@ const App: React.FC = () => {
               tickets={tickets}
               onViewTicketDetails={handleViewTicketDetails}
               requesterName={profile?.full_name || ''}
+              hasMore={hasMore}
+              onLoadMore={fetchNextPage}
             />
           ) : (
             <TecnicoView
@@ -399,6 +318,8 @@ const App: React.FC = () => {
               onPinTicket={handlePinTicket}
               searchQuery={debouncedSearchQuery}
               onSearchChange={setSearchQuery}
+              hasMore={hasMore}
+              onLoadMore={fetchNextPage}
             />
           )
         )}

@@ -6,6 +6,8 @@ interface MyTicketsProps {
     tickets: Ticket[];
     onViewDetails: (ticket: Ticket) => void;
     requesterName: string;
+    hasMore?: boolean;
+    onLoadMore?: () => void;
 }
 
 const statusConfig = {
@@ -14,7 +16,7 @@ const statusConfig = {
     DONE: { label: 'Concluído', color: 'bg-green-100 text-green-700', icon: CheckCircle2 }
 };
 
-const MyTickets: React.FC<MyTicketsProps> = ({ tickets, onViewDetails, requesterName }) => {
+const MyTickets: React.FC<MyTicketsProps> = ({ tickets, onViewDetails, requesterName, hasMore, onLoadMore }) => {
     const [filter, setFilter] = useState<'all' | 'TODO' | 'IN_PROGRESS' | 'DONE'>('all');
 
     // Filter tickets by requester (using requester_name or requester_id if we want more precision, 
@@ -126,10 +128,15 @@ const MyTickets: React.FC<MyTicketsProps> = ({ tickets, onViewDetails, requester
                 })}
             </div>
 
-            {filteredTickets.length === 0 && (
-                <div className="text-center py-12 bg-slate-50/50 border-2 border-dashed border-slate-100 rounded-[2.5rem]">
-                    <Inbox size={48} className="mx-auto text-slate-200 mb-4" />
-                    <p className="font-bold text-slate-400">Nenhum chamado encontrado nesta categoria</p>
+            {hasMore && (
+                <div className="flex justify-center mt-8">
+                    <button
+                        onClick={onLoadMore}
+                        className="group flex items-center gap-3 px-8 py-4 bg-white border-2 border-blue-50 text-blue-600 font-black text-xs uppercase tracking-widest rounded-3xl shadow-xl shadow-blue-100/50 hover:bg-blue-600 hover:text-white hover:border-blue-600 hover:-translate-y-1 transition-all duration-300"
+                    >
+                        <span>Carregar Mais Chamados</span>
+                        <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                    </button>
                 </div>
             )}
         </div>

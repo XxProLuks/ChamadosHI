@@ -1,48 +1,44 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { Ticket, TicketStatus } from '../types';
+import { Ticket, TicketStatus, UserRole } from '../types';
 import toast from 'react-hot-toast';
-import type { Session } from '@supabase/supabase-js';
 
-interface UseTicketsOptions {
-    session: Session | null;
-}
-
-interface UseTicketsReturn {
-    tickets: Ticket[];
-    loading: boolean;
-    fetchTickets: () => Promise<void>;
-    createTicket: (ticket: Partial<Ticket>) => Promise<boolean>;
-    updateStatus: (id: string, status: TicketStatus, profileRole?: string) => Promise<boolean>;
-    deleteTicket: (id: string) => Promise<boolean>;
-    // Computed values
-    todoCount: number;
-    inProgressCount: number;
-    doneCount: number;
-    criticalCount: number;
-}
-
-/**
- * Custom hook for managing tickets
- * Provides CRUD operations and computed statistics
- */
-export function useTickets({ session }: UseTicketsOptions): UseTicketsReturn {
+export const useTickets = (userId: string | undefined, userRole: UserRole | undefined) => {
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const PAGE_SIZE = 20;
 
-    const fetchTickets = useCallback(async () => {
-        if (!session) return;
+    const fetchTickets = useCallback(async (isInitial = true) => {
+        if (!userId || !userRole) return;
+
+        if (isInitial) {
+            setLoading(true);
+            setPage(0);
+        }
 
         try {
-            const { data, error } = await supabase
+            const start = isInitial ? 0 : (page + 1) * PAGE_SIZE;
+            const end = start + PAGE_SIZE - 1;
+
+            let query = supabase
                 .from('tickets')
                 .select(`
                     *,
                     requester:profiles!requester_id(full_name),
                     technician:profiles!technician_id(full_name, avatar_url),
                     sector:sectors(name)
-                `)
-                .order('created_at', { ascending: false });
+                `, { count: 'exact' });
+
+            // Admin/Tech sees all, Solicitante only their own
+            if (userRole === 'SOLICITANTE') {
+                query = query.eq('requester_id', userId);
+            }
+
+            const { data, error, count } = await query
+                .order('created_at', { ascending: false })
+                .range(start, end);
 
             if (error) throw error;
 
@@ -54,140 +50,109 @@ export function useTickets({ session }: UseTicketsOptions): UseTicketsReturn {
                     technician_avatar: t.technician?.avatar_url,
                     sector_name: t.sector?.name
                 }));
-                setTickets(formattedTickets);
+
+                setTickets(prev => isInitial ? formattedTickets : [...prev, ...formattedTickets]);
+                setHasMore(count ? (isInitial ? formattedTickets : [...tickets, ...formattedTickets]).length < count : false);
+                if (!isInitial) setPage(prev => prev + 1);
             }
-        } catch (error: unknown) {
-            const msg = error instanceof Error ? error.message : 'Erro desconhecido';
-            console.error('Erro ao buscar tickets:', msg);
-            toast.error('Erro ao buscar chamados');
+        } catch (error: any) {
+            toast.error('Erro ao buscar chamados: ' + error.message);
         } finally {
             setLoading(false);
         }
-    }, [session]);
+    }, [userId, userRole, page, tickets]);
 
-    const createTicket = useCallback(async (newTicket: Partial<Ticket>): Promise<boolean> => {
-        if (!session) return false;
-
-        try {
-            const finalPriority = newTicket.priority || 'MEDIUM';
-
-            const { error } = await supabase
-                .from('tickets')
-                .insert([{
-                    ...newTicket,
-                    priority: finalPriority,
-                    is_critical: newTicket.is_critical || finalPriority === 'CRITICAL',
-                    requester_id: session.user.id,
-                    image_urls: newTicket.image_urls
-                }]);
-
-            if (error) throw error;
-
-            toast.success('Chamado criado com sucesso!');
-            await fetchTickets();
-            return true;
-        } catch (error: unknown) {
-            const msg = error instanceof Error ? error.message : 'Erro desconhecido';
-            toast.error('Erro ao criar chamado: ' + msg);
-            return false;
+    const fetchNextPage = () => {
+        if (!loading && hasMore) {
+            fetchTickets(false);
         }
-    }, [session, fetchTickets]);
+    };
 
-    const updateStatus = useCallback(async (
-        id: string,
-        status: TicketStatus,
-        profileRole?: string
-    ): Promise<boolean> => {
-        if (!session) return false;
-
-        try {
-            const updates: Record<string, unknown> = {
-                status,
-                updated_at: new Date().toISOString()
-            };
-
-            if (status === 'IN_PROGRESS' && profileRole !== 'SOLICITANTE') {
-                updates.technician_id = session.user.id;
-            }
-
-            const { error } = await supabase
-                .from('tickets')
-                .update(updates)
-                .eq('id', id);
-
-            if (error) throw error;
-
-            // Update local state
-            setTickets(prev => prev.map(t =>
-                t.id === id ? { ...t, ...updates } as Ticket : t
-            ));
-
-            toast.success('Status atualizado!');
-            return true;
-        } catch (error: unknown) {
-            const msg = error instanceof Error ? error.message : 'Erro desconhecido';
-            toast.error('Erro ao atualizar status: ' + msg);
-            return false;
-        }
-    }, [session]);
-
-    const deleteTicket = useCallback(async (id: string): Promise<boolean> => {
-        try {
-            const { error } = await supabase
-                .from('tickets')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
-
-            setTickets(prev => prev.filter(t => t.id !== id));
-            toast.success('Chamado excluído!');
-            return true;
-        } catch (error: unknown) {
-            const msg = error instanceof Error ? error.message : 'Erro desconhecido';
-            toast.error('Erro ao excluir chamado: ' + msg);
-            return false;
-        }
-    }, []);
-
-    // Computed statistics
-    const { todoCount, inProgressCount, doneCount, criticalCount } = useMemo(() => ({
-        todoCount: tickets.filter(t => t.status === 'TODO').length,
-        inProgressCount: tickets.filter(t => t.status === 'IN_PROGRESS').length,
-        doneCount: tickets.filter(t => t.status === 'DONE').length,
-        criticalCount: tickets.filter(t => t.is_critical).length
-    }), [tickets]);
-
-    // Initial fetch and realtime subscription
     useEffect(() => {
-        if (!session) return;
+        fetchTickets(true);
 
-        fetchTickets();
-
-        const subscription = supabase
-            .channel('tickets-hook-channel')
+        // Real-time Subscription - On change, we refresh the first page
+        // Note: For complex pagination, real-time can be tricky.
+        // Here we just refresh the whole view to stay simple for now.
+        const ticketSubscription = supabase
+            .channel('tickets-channel')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, () => {
-                fetchTickets();
+                fetchTickets(true);
             })
             .subscribe();
 
         return () => {
-            subscription.unsubscribe();
+            ticketSubscription.unsubscribe();
         };
-    }, [session, fetchTickets]);
+    }, [userId, userRole]); // Only re-fetch if identity changes. Real-time handles updates.
+
+    const updateTicketStatus = async (id: string, status: TicketStatus, currentUserId: string) => {
+        const updates: Record<string, any> = { status, updated_at: new Date().toISOString() };
+
+        if (status === 'IN_PROGRESS' && userRole !== 'SOLICITANTE') {
+            updates.technician_id = currentUserId;
+        }
+
+        const { error } = await supabase
+            .from('tickets')
+            .update(updates)
+            .eq('id', id);
+
+        if (error) {
+            toast.error('Erro ao atualizar status: ' + error.message);
+            return { error };
+        } else {
+            toast.success('Status atualizado!');
+            return { success: true };
+        }
+    };
+
+    const deleteTicket = async (id: string) => {
+        const { error } = await supabase
+            .from('tickets')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            toast.error('Erro ao excluir chamado: ' + error.message);
+            return { error };
+        } else {
+            setTickets(prev => prev.filter(t => t.id !== id));
+            toast.success('Chamado excluído!');
+            return { success: true };
+        }
+    };
+
+    const pinTicket = async (id: string, isPinned: boolean, currentUserId: string) => {
+        const updates = {
+            is_pinned: isPinned,
+            pinned_at: isPinned ? new Date().toISOString() : undefined,
+            pinned_by: isPinned ? currentUserId : undefined
+        };
+
+        const { error } = await supabase
+            .from('tickets')
+            .update(updates)
+            .eq('id', id);
+
+        if (error) {
+            toast.error('Erro ao fixar ticket: ' + error.message);
+            return { error };
+        } else {
+            setTickets(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+            toast.success(isPinned ? 'Ticket fixado!' : 'Ticket desafixado!');
+            return { success: true };
+        }
+    };
 
     return {
         tickets,
         loading,
-        fetchTickets,
-        createTicket,
-        updateStatus,
+        hasMore,
+        fetchNextPage,
+        refreshTickets: () => fetchTickets(true),
+        updateTicketStatus,
         deleteTicket,
-        todoCount,
-        inProgressCount,
-        doneCount,
-        criticalCount
+        pinTicket
     };
-}
-
-export default useTickets;
+};

@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import DOMPurify from 'dompurify';
 import { supabase } from '../lib/supabase';
 import { Send, Loader2, User, Wrench, Image, X } from 'lucide-react';
+import notifyByEmail from '../lib/emailService';
 
 interface Message {
     id: string;
@@ -198,6 +199,36 @@ const TicketChat: React.FC<TicketChatProps> = ({ ticketId, currentUserId, curren
                 setSelectedFiles([]);
                 setImagePreviews([]);
                 inputRef.current?.focus();
+
+                // Notificar a outra parte por email
+                const { data: ticket } = await supabase
+                    .from('tickets')
+                    .select('title, requester_id, technician_id')
+                    .eq('id', ticketId)
+                    .single();
+
+                if (ticket) {
+                    const recipientId = currentUserId === ticket.requester_id
+                        ? ticket.technician_id
+                        : ticket.requester_id;
+
+                    if (recipientId) {
+                        const { data: recipientProfile } = await supabase
+                            .from('profiles')
+                            .select('email')
+                            .eq('id', recipientId)
+                            .single();
+
+                        if (recipientProfile?.email) {
+                            notifyByEmail.newMessage(
+                                recipientProfile.email,
+                                ticket.title,
+                                currentUserName,
+                                newMessage.trim() || '📷 Foto(s)'
+                            );
+                        }
+                    }
+                }
             } else {
                 throw error;
             }

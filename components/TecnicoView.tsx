@@ -23,6 +23,8 @@ interface TecnicoViewProps {
   onPinTicket?: (id: string, isPinned: boolean) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
 }
 
 const statusConfig: Record<TicketStatus, { title: string; color: string; icon: any }> = {
@@ -38,7 +40,7 @@ const priorityConfig: Record<Priority, { color: string; label: string }> = {
   CRITICAL: { color: 'bg-rose-100 text-rose-700', label: 'Crítica' }
 };
 
-const TecnicoView: React.FC<TecnicoViewProps> = ({ tickets, onUpdateStatus, onViewDetails, onPinTicket, searchQuery, onSearchChange }) => {
+const TecnicoView: React.FC<TecnicoViewProps> = ({ tickets, onUpdateStatus, onViewDetails, onPinTicket, searchQuery, onSearchChange, hasMore, onLoadMore }) => {
 
   const filteredTickets = useMemo(() => {
     let result = tickets;
@@ -255,6 +257,18 @@ const TecnicoView: React.FC<TecnicoViewProps> = ({ tickets, onUpdateStatus, onVi
             ))}
           </div>
         </DragDropContext>
+
+        {hasMore && (
+          <div className="flex justify-center py-8">
+            <button
+              onClick={onLoadMore}
+              className="group flex items-center gap-3 px-10 py-5 bg-white border-2 border-blue-50 text-blue-600 font-black text-xs uppercase tracking-widest rounded-[2rem] shadow-2xl shadow-blue-100/50 hover:bg-blue-600 hover:text-white hover:border-blue-600 hover:-translate-y-1 transition-all duration-300"
+            >
+              <Loader2 size={18} className="animate-spin group-hover:text-white" />
+              <span>Ver Mais Chamados</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
