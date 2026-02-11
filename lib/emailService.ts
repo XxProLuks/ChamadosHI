@@ -19,15 +19,8 @@ export interface EmailMessage {
     text?: string;
 }
 
-// Email configuration from environment variables
-export const emailConfig: EmailConfig = {
-    host: import.meta.env.VITE_SMTP_HOST || 'localhost',
-    port: parseInt(import.meta.env.VITE_SMTP_PORT || '587'),
-    secure: import.meta.env.VITE_SMTP_SECURE === 'true',
-    user: import.meta.env.VITE_SMTP_USER || '',
-    pass: import.meta.env.VITE_SMTP_PASS || '',
-    from: import.meta.env.VITE_SMTP_FROM || 'Sistema de Chamados <chamados@hospital.local>'
-};
+// NOTE: SMTP configuration is handled server-side by the Supabase Edge Function.
+// Do NOT expose SMTP credentials in the frontend bundle.
 
 /**
  * Email templates for different notification types
@@ -159,22 +152,15 @@ import { supabase } from './supabase';
 export async function queueEmail(message: EmailMessage): Promise<boolean> {
     try {
         const { error } = await supabase.functions.invoke('send-email', {
-            body: {
-                message,
-                config: emailConfig
-            }
+            body: { message }
         });
 
         if (error) {
-            console.error('Failed to send email via Edge Function:', error);
-            // Fallback to log for debugging
-            console.log('📧 Email content (fallback):', message);
             return false;
         }
 
         return true;
-    } catch (error) {
-        console.error('Failed to queue email:', error);
+    } catch {
         return false;
     }
 }

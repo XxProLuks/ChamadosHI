@@ -78,21 +78,6 @@ const SolicitanteView: React.FC<SolicitanteViewProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 flex flex-col gap-8 animate-in fade-in duration-500">
-      {/* Floating Training Button */}
-      <div className="fixed top-28 left-6 z-[40] animate-in slide-in-from-left duration-700">
-        <div className="absolute inset-0 bg-blue-400 rounded-full animate-ping opacity-20" />
-        <a
-          href="POP Treinamento.html"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="relative flex items-center gap-3 px-5 py-3 bg-white dark:bg-slate-800 border-2 border-blue-100 dark:border-blue-900/50 text-blue-600 dark:text-blue-400 font-black text-[10px] uppercase tracking-[0.2em] rounded-full shadow-2xl hover:scale-110 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all duration-300 group ring-4 ring-blue-50 dark:ring-blue-900/20"
-        >
-          <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-            <HelpCircle size={18} className="group-hover:rotate-12 transition-transform" />
-          </div>
-          <span className="pr-2">Treinamento</span>
-        </a>
-      </div>
 
       <div className="text-center pt-4">
         <h2 className="text-2xl sm:text-4xl font-black text-slate-800 mb-3 tracking-tight">
