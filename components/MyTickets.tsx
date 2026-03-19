@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Ticket } from '../types';
+import { Ticket, TicketStatus } from '../types';
 import { Clock, CheckCircle2, Wrench, MapPin, ChevronRight, Inbox, AlertCircle, Receipt } from 'lucide-react';
 
 interface MyTicketsProps {
@@ -13,11 +13,12 @@ interface MyTicketsProps {
 const statusConfig = {
     TODO: { label: 'Aguardando', color: 'bg-amber-100 text-amber-700', icon: Clock },
     IN_PROGRESS: { label: 'Em Atendimento', color: 'bg-blue-100 text-blue-700', icon: Wrench },
+    WAITING: { label: 'Aguardando Resposta', color: 'bg-orange-100 text-orange-700', icon: Clock },
     DONE: { label: 'Concluído', color: 'bg-green-100 text-green-700', icon: CheckCircle2 }
 };
 
 const MyTickets: React.FC<MyTicketsProps> = ({ tickets, onViewDetails, requesterName, hasMore, onLoadMore }) => {
-    const [filter, setFilter] = useState<'all' | 'TODO' | 'IN_PROGRESS' | 'DONE'>('all');
+    const [filter, setFilter] = useState<'all' | TicketStatus>('all');
 
     // Filter tickets by requester (using requester_name or requester_id if we want more precision, 
     // but for now requesterName is passed from App.tsx session)
@@ -31,6 +32,7 @@ const MyTickets: React.FC<MyTicketsProps> = ({ tickets, onViewDetails, requester
         all: myTickets.length,
         TODO: myTickets.filter(t => t.status === 'TODO').length,
         IN_PROGRESS: myTickets.filter(t => t.status === 'IN_PROGRESS').length,
+        WAITING: myTickets.filter(t => t.status === 'WAITING').length,
         DONE: myTickets.filter(t => t.status === 'DONE').length
     };
 

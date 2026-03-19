@@ -11,7 +11,7 @@ export interface GlobalAlert {
 }
 
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-export type TicketStatus = 'TODO' | 'IN_PROGRESS' | 'DONE';
+export type TicketStatus = 'TODO' | 'IN_PROGRESS' | 'WAITING' | 'DONE';
 export type TicketCategory = 'CHAMADO' | 'CRITICAL' | 'MAINTENANCE' | 'CLIMATIZACAO' | 'TI';
 export type UserRole = 'SOLICITANTE' | 'TECNICO' | 'ADMIN';
 
@@ -20,14 +20,30 @@ export interface Sector {
   name: string;
   icon: string;
   colorClass: string;
+  auto_assign?: boolean;
+}
+
+export interface SLAConfig {
+  id: string;
+  priority: Priority;
+  deadline_hours: number;
+  updated_at: string;
+  updated_by?: string;
+}
+
+export interface TechnicianSector {
+  technician_id: string;
+  sector_id: string;
 }
 
 export interface Profile {
   id: string;
   full_name: string;
+  email?: string;
   role: UserRole;
   avatar_url?: string;
   sector?: string;
+  is_available?: boolean;
 }
 
 export interface Ticket {
@@ -57,6 +73,8 @@ export interface Ticket {
   sector_name?: string;
   rating?: number;
   rating_comment?: string;
+  sla_deadline?: string;
+  first_response_at?: string;
 }
 
 export interface Notification {

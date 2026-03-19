@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Ticket } from '../types';
+import { Ticket, TicketStatus } from '../types';
 import TicketChat from './TicketChat';
 import TicketHistory from './TicketHistory';
 import TicketRating from './TicketRating';
@@ -24,7 +24,7 @@ import {
 interface TicketDetailModalProps {
     ticket: Ticket;
     onClose: () => void;
-    onUpdateStatus?: (id: string, status: 'TODO' | 'IN_PROGRESS' | 'DONE') => void;
+    onUpdateStatus?: (id: string, status: TicketStatus) => void;
     onDelete?: (id: string) => void;
     isRequester?: boolean;
     currentUserId?: string;
@@ -42,6 +42,7 @@ const priorityConfig = {
 const statusConfig = {
     TODO: { label: 'Aguardando', color: 'bg-amber-100 text-amber-700', icon: Clock },
     IN_PROGRESS: { label: 'Em Atendimento', color: 'bg-blue-100 text-blue-700', icon: Wrench },
+    WAITING: { label: 'Aguardando Resposta', color: 'bg-orange-100 text-orange-700', icon: Clock },
     DONE: { label: 'Concluído', color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle2 }
 };
 

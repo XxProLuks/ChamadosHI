@@ -30,6 +30,7 @@ interface TecnicoViewProps {
 const statusConfig: Record<TicketStatus, { title: string; color: string; icon: any }> = {
   TODO: { title: 'A Fazer', color: 'bg-slate-500', icon: Clock },
   IN_PROGRESS: { title: 'Em Andamento', color: 'bg-blue-600', icon: Wrench },
+  WAITING: { title: 'Aguardando', color: 'bg-amber-500', icon: Clock },
   DONE: { title: 'Concluído', color: 'bg-green-500', icon: CheckCircle2 }
 };
 
@@ -141,7 +142,7 @@ const TecnicoView: React.FC<TecnicoViewProps> = ({ tickets, onUpdateStatus, onVi
         {/* Drag and Drop Kanban Board */}
         <DragDropContext onDragEnd={onDragEnd}>
           <div className="flex flex-1 gap-8 overflow-x-auto pb-8 no-scrollbar min-h-[600px]">
-            {(['TODO', 'IN_PROGRESS', 'DONE'] as TicketStatus[]).map(status => (
+            {(['TODO', 'IN_PROGRESS', 'WAITING', 'DONE'] as TicketStatus[]).map(status => (
               <Droppable droppableId={status} key={status}>
                 {(provided, snapshot) => (
                   <div
