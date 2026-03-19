@@ -54,7 +54,7 @@ ON CONFLICT (priority) DO NOTHING;
 -- 6. Technician-sector binding table
 CREATE TABLE IF NOT EXISTS technician_sectors (
     technician_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-    sector_id UUID REFERENCES sectors(id) ON DELETE CASCADE,
+    sector_id TEXT REFERENCES sectors(id) ON DELETE CASCADE,
     PRIMARY KEY (technician_id, sector_id)
 );
 
