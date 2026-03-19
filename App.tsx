@@ -1,33 +1,35 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { Session } from '@supabase/supabase-js';
 import toast from 'react-hot-toast';
 import { supabase } from './lib/supabase';
 import { requestNotificationPermission, sendDesktopNotification } from './lib/notifications';
-import { isAlertDismissed } from './lib/localStorage';
-import { Ticket, ViewType, Sector, TicketStatus, TicketCategory, Notification, Profile, GlobalAlert } from './types';
+import { Ticket, ViewType, Sector, TicketStatus, TicketCategory, Profile } from './types';
 import Header from './components/Header';
 import SolicitanteView from './components/SolicitanteView';
 import TecnicoView from './components/TecnicoView';
-import Dashboard from './components/Dashboard';
 import TicketModal from './components/TicketModal';
 import TicketDetailModal from './components/TicketDetailModal';
 import Auth from './components/Auth';
-import UserManager from './components/UserManager';
-import SectorManager from './components/SectorManager';
-import GlobalAlertManager from './components/GlobalAlertManager';
 import { Loader2 } from 'lucide-react';
 import notifyByEmail from './lib/emailService';
 import { useTickets } from './hooks/useTickets';
 import { useGlobalAlerts } from './hooks/useGlobalAlerts';
 import { useNotifications } from './hooks/useNotifications';
 import { useDebounce } from './hooks/useDebounce';
+import { useTheme } from './contexts/ThemeContext';
+
+// Lazy-loaded heavy components
+const Dashboard = React.lazy(() => import('./components/Dashboard'));
+const UserManager = React.lazy(() => import('./components/UserManager'));
+const SectorManager = React.lazy(() => import('./components/SectorManager'));
+const GlobalAlertManager = React.lazy(() => import('./components/GlobalAlertManager'));
 
 const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [view, setView] = useState<ViewType>('SOLICITANTE');
   const [showDashboard, setShowDashboard] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const { darkMode, toggleDarkMode } = useTheme();
   const [sectors, setSectors] = useState<Sector[]>([]);
   const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -64,15 +66,6 @@ const App: React.FC = () => {
 
   // Debounced search query (300ms delay)
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
-
-  // Theme Management
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
 
   // Auth & Profile Management
   useEffect(() => {
@@ -270,7 +263,7 @@ const App: React.FC = () => {
         userName={profile?.full_name}
         userRole={profile?.role}
         darkMode={darkMode}
-        onToggleDarkMode={() => setDarkMode(!darkMode)}
+        onToggleDarkMode={toggleDarkMode}
         showDashboard={showDashboard}
         setShowDashboard={setShowDashboard}
         onToggleDashboard={() => setShowDashboard(!showDashboard)}
@@ -282,7 +275,9 @@ const App: React.FC = () => {
 
       <main className="flex-grow" role="main">
         {showDashboard && (profile?.role === 'TECNICO' || profile?.role === 'ADMIN') ? (
-          <Dashboard tickets={tickets} />
+          <Suspense fallback={<div className="flex justify-center p-12"><Loader2 className="animate-spin text-blue-500" size={32} /></div>}>
+            <Dashboard tickets={tickets} />
+          </Suspense>
         ) : (
           view === 'SOLICITANTE' ? (
             <SolicitanteView
@@ -339,23 +334,29 @@ const App: React.FC = () => {
       )}
 
       {showUserManager && (
-        <UserManager
-          onClose={() => setShowUserManager(false)}
-          currentUserRole={profile?.role || 'SOLICITANTE'}
-        />
+        <Suspense fallback={null}>
+          <UserManager
+            onClose={() => setShowUserManager(false)}
+            currentUserRole={profile?.role || 'SOLICITANTE'}
+          />
+        </Suspense>
       )}
 
       {showSectorManager && (
-        <SectorManager
-          onClose={() => setShowSectorManager(false)}
-        />
+        <Suspense fallback={null}>
+          <SectorManager
+            onClose={() => setShowSectorManager(false)}
+          />
+        </Suspense>
       )}
 
       {showGlobalAlertManager && (
-        <GlobalAlertManager
-          onClose={() => setShowGlobalAlertManager(false)}
-          currentUserId={session.user.id}
-        />
+        <Suspense fallback={null}>
+          <GlobalAlertManager
+            onClose={() => setShowGlobalAlertManager(false)}
+            currentUserId={session.user.id}
+          />
+        </Suspense>
       )}
     </div>
   );

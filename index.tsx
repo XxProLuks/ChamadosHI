@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom/client';
 import { Toaster } from 'react-hot-toast';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -14,6 +15,7 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
+      <ThemeProvider>
       <App />
       <Toaster
         position="top-right"
@@ -40,6 +42,7 @@ root.render(
           },
         }}
       />
+      </ThemeProvider>
     </ErrorBoundary>
   </React.StrictMode>
 );
