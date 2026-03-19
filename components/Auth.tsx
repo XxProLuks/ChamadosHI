@@ -15,6 +15,8 @@ const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+    const ALLOWED_EMAIL_DOMAIN = '@hospitaldeilheus.com.br';
+
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -22,6 +24,10 @@ const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
         setSuccessMessage(null);
 
         try {
+            if (!isLogin && !email.toLowerCase().endsWith(ALLOWED_EMAIL_DOMAIN)) {
+                throw new Error(`Apenas emails corporativos (${ALLOWED_EMAIL_DOMAIN}) são permitidos.`);
+            }
+
             if (isLogin) {
                 const { error } = await supabase.auth.signInWithPassword({
                     email,

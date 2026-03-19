@@ -1,7 +1,7 @@
 -- ===========================================
--- Hospital Saint-Louis - Sistema de Chamados
+-- Hospital de Ilhéus - Sistema de Chamados
 -- COMPREHENSIVE Database Schema for Supabase
--- Last Updated: 2026-01-08
+-- Last Updated: 2026-03-19
 -- ===========================================
 
 -- ===========================================
@@ -36,7 +36,7 @@ BEGIN
     VALUES (
         NEW.id,
         COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
-        COALESCE(NEW.raw_user_meta_data->>'role', 'SOLICITANTE')
+        'SOLICITANTE'
     );
     RETURN NEW;
 END;
@@ -111,9 +111,15 @@ CREATE TABLE IF NOT EXISTS tickets (
 -- RLS for tickets
 ALTER TABLE tickets ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Anyone can view tickets"
+CREATE POLICY "Users can view relevant tickets"
     ON tickets FOR SELECT
-    USING (true);
+    USING (
+        auth.uid() = requester_id OR
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid() AND profiles.role IN ('TECNICO', 'ADMIN')
+        )
+    );
 
 CREATE POLICY "Authenticated users can create tickets"
     ON tickets FOR INSERT

@@ -167,7 +167,7 @@ const TicketChat: React.FC<TicketChatProps> = ({ ticketId, currentUserId, curren
             if (selectedFiles.length > 0) {
                 await Promise.all(selectedFiles.map(async (file) => {
                     const fileExt = file.name.split('.').pop();
-                    const fileName = `${Math.random()}.${fileExt}`;
+                    const fileName = `${crypto.randomUUID()}.${fileExt}`;
                     const filePath = `${fileName}`;
 
                     const { error: uploadError } = await supabase.storage
@@ -426,7 +426,7 @@ const TicketChat: React.FC<TicketChatProps> = ({ ticketId, currentUserId, curren
                             setNewMessage(e.target.value);
                             handleTyping();
                         }}
-                        onKeyPress={handleKeyPress}
+                        onKeyDown={handleKeyPress}
                         placeholder="Digite sua mensagem..."
                         className="flex-1 px-5 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:border-blue-400 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all font-medium text-sm"
                         aria-label="Mensagem"

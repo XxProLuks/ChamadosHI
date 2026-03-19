@@ -81,8 +81,8 @@ describe('SolicitanteView Component', () => {
         expect(defaultProps.onSearchChange).toHaveBeenCalledWith('Farm');
     });
 
-    it('should render training button link', () => {
+    it('should render my tickets section', () => {
         render(<SolicitanteView {...defaultProps} />);
-        expect(screen.getByText('Treinamento')).toBeDefined();
+        expect(screen.getByText('Meus Chamados')).toBeDefined();
     });
 });

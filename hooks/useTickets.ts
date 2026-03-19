@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Ticket, TicketStatus, UserRole } from '../types';
 import toast from 'react-hot-toast';
@@ -6,8 +6,8 @@ import toast from 'react-hot-toast';
 export const useTickets = (userId: string | undefined, userRole: UserRole | undefined) => {
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [loading, setLoading] = useState(true);
-    const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
+    const pageRef = useRef(0);
     const PAGE_SIZE = 20;
 
     const fetchTickets = useCallback(async (isInitial = true) => {
@@ -15,11 +15,12 @@ export const useTickets = (userId: string | undefined, userRole: UserRole | unde
 
         if (isInitial) {
             setLoading(true);
-            setPage(0);
+            pageRef.current = 0;
         }
 
         try {
-            const start = isInitial ? 0 : (page + 1) * PAGE_SIZE;
+            const currentPage = isInitial ? 0 : pageRef.current + 1;
+            const start = currentPage * PAGE_SIZE;
             const end = start + PAGE_SIZE - 1;
 
             let query = supabase
@@ -31,7 +32,6 @@ export const useTickets = (userId: string | undefined, userRole: UserRole | unde
                     sector:sectors(name)
                 `, { count: 'exact' });
 
-            // Admin/Tech sees all, Solicitante only their own
             if (userRole === 'SOLICITANTE') {
                 query = query.eq('requester_id', userId);
             }
@@ -51,16 +51,24 @@ export const useTickets = (userId: string | undefined, userRole: UserRole | unde
                     sector_name: t.sector?.name
                 }));
 
-                setTickets(prev => isInitial ? formattedTickets : [...prev, ...formattedTickets]);
-                setHasMore(count ? (isInitial ? formattedTickets : [...tickets, ...formattedTickets]).length < count : false);
-                if (!isInitial) setPage(prev => prev + 1);
+                if (isInitial) {
+                    setTickets(formattedTickets);
+                    setHasMore(count ? formattedTickets.length < count : false);
+                } else {
+                    setTickets(prev => {
+                        const merged = [...prev, ...formattedTickets];
+                        setHasMore(count ? merged.length < count : false);
+                        return merged;
+                    });
+                    pageRef.current = currentPage;
+                }
             }
         } catch (error: any) {
             toast.error('Erro ao buscar chamados: ' + error.message);
         } finally {
             setLoading(false);
         }
-    }, [userId, userRole, page, tickets]);
+    }, [userId, userRole]);
 
     const fetchNextPage = () => {
         if (!loading && hasMore) {
@@ -71,9 +79,6 @@ export const useTickets = (userId: string | undefined, userRole: UserRole | unde
     useEffect(() => {
         fetchTickets(true);
 
-        // Real-time Subscription - On change, we refresh the first page
-        // Note: For complex pagination, real-time can be tricky.
-        // Here we just refresh the whole view to stay simple for now.
         const ticketSubscription = supabase
             .channel('tickets-channel')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, () => {
@@ -84,7 +89,7 @@ export const useTickets = (userId: string | undefined, userRole: UserRole | unde
         return () => {
             ticketSubscription.unsubscribe();
         };
-    }, [userId, userRole]); // Only re-fetch if identity changes. Real-time handles updates.
+    }, [userId, userRole, fetchTickets]);
 
     const updateTicketStatus = async (id: string, status: TicketStatus, currentUserId: string) => {
         const updates: Record<string, any> = { status, updated_at: new Date().toISOString() };

@@ -23,11 +23,23 @@ export interface EmailMessage {
 // Do NOT expose SMTP credentials in the frontend bundle.
 
 /**
+ * Escapes HTML special characters to prevent XSS in email templates
+ */
+function escapeHtml(unsafe: string): string {
+    return unsafe
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+/**
  * Email templates for different notification types
  */
 export const emailTemplates = {
     ticketCreated: (ticketTitle: string, ticketId: string, requesterName: string, location: string) => ({
-        subject: `🆕 Novo Chamado: ${ticketTitle}`,
+        subject: `🆕 Novo Chamado: ${escapeHtml(ticketTitle)}`,
         html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                 <div style="background: linear-gradient(135deg, #3b82f6, #1e40af); padding: 20px; border-radius: 10px 10px 0 0;">
@@ -38,19 +50,19 @@ export const emailTemplates = {
                     <table style="width: 100%; border-collapse: collapse;">
                         <tr>
                             <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Título:</td>
-                            <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: bold;">${ticketTitle}</td>
+                            <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: bold;">${escapeHtml(ticketTitle)}</td>
                         </tr>
                         <tr>
                             <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Solicitante:</td>
-                            <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">${requesterName}</td>
+                            <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">${escapeHtml(requesterName)}</td>
                         </tr>
                         <tr>
                             <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Local:</td>
-                            <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">${location}</td>
+                            <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">${escapeHtml(location)}</td>
                         </tr>
                         <tr>
                             <td style="padding: 10px 0; color: #64748b;">ID:</td>
-                            <td style="padding: 10px 0; font-family: monospace; font-size: 12px;">${ticketId}</td>
+                            <td style="padding: 10px 0; font-family: monospace; font-size: 12px;">${escapeHtml(ticketId)}</td>
                         </tr>
                     </table>
                     <div style="margin-top: 20px; text-align: center;">
@@ -66,7 +78,7 @@ export const emailTemplates = {
     }),
 
     statusChanged: (ticketTitle: string, oldStatus: string, newStatus: string, technicianName?: string) => ({
-        subject: `🔄 Status Atualizado: ${ticketTitle}`,
+        subject: `🔄 Status Atualizado: ${escapeHtml(ticketTitle)}`,
         html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                 <div style="background: linear-gradient(135deg, #3b82f6, #1e40af); padding: 20px; border-radius: 10px 10px 0 0;">
@@ -74,13 +86,13 @@ export const emailTemplates = {
                 </div>
                 <div style="background: #f8fafc; padding: 20px; border: 1px solid #e2e8f0;">
                     <h2 style="color: #1e293b; margin-top: 0;">Status do Chamado Atualizado</h2>
-                    <p style="color: #475569;"><strong>${ticketTitle}</strong></p>
+                    <p style="color: #475569;"><strong>${escapeHtml(ticketTitle)}</strong></p>
                     <div style="display: flex; align-items: center; justify-content: center; margin: 20px 0;">
-                        <span style="background: #fee2e2; color: #991b1b; padding: 8px 16px; border-radius: 20px;">${oldStatus}</span>
+                        <span style="background: #fee2e2; color: #991b1b; padding: 8px 16px; border-radius: 20px;">${escapeHtml(oldStatus)}</span>
                         <span style="margin: 0 10px; color: #64748b;">→</span>
-                        <span style="background: #dcfce7; color: #166534; padding: 8px 16px; border-radius: 20px;">${newStatus}</span>
+                        <span style="background: #dcfce7; color: #166534; padding: 8px 16px; border-radius: 20px;">${escapeHtml(newStatus)}</span>
                     </div>
-                    ${technicianName ? `<p style="color: #64748b; text-align: center;">Técnico responsável: <strong>${technicianName}</strong></p>` : ''}
+                    ${technicianName ? `<p style="color: #64748b; text-align: center;">Técnico responsável: <strong>${escapeHtml(technicianName)}</strong></p>` : ''}
                 </div>
                 <div style="background: #1e293b; padding: 15px; border-radius: 0 0 10px 10px; text-align: center;">
                     <p style="color: #94a3b8; margin: 0; font-size: 12px;">Hospital de Ilhéus - Sistema de Chamados</p>
@@ -91,7 +103,7 @@ export const emailTemplates = {
     }),
 
     newMessage: (ticketTitle: string, senderName: string, messagePreview: string) => ({
-        subject: `💬 Nova Mensagem: ${ticketTitle}`,
+        subject: `💬 Nova Mensagem: ${escapeHtml(ticketTitle)}`,
         html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                 <div style="background: linear-gradient(135deg, #3b82f6, #1e40af); padding: 20px; border-radius: 10px 10px 0 0;">
@@ -99,10 +111,10 @@ export const emailTemplates = {
                 </div>
                 <div style="background: #f8fafc; padding: 20px; border: 1px solid #e2e8f0;">
                     <h2 style="color: #1e293b; margin-top: 0;">Nova Mensagem no Chamado</h2>
-                    <p style="color: #475569;"><strong>${ticketTitle}</strong></p>
+                    <p style="color: #475569;"><strong>${escapeHtml(ticketTitle)}</strong></p>
                     <div style="background: white; border-left: 4px solid #3b82f6; padding: 15px; margin: 15px 0;">
-                        <p style="color: #64748b; margin: 0 0 5px 0; font-size: 12px;"><strong>${senderName}</strong> escreveu:</p>
-                        <p style="color: #1e293b; margin: 0;">${messagePreview}</p>
+                        <p style="color: #64748b; margin: 0 0 5px 0; font-size: 12px;"><strong>${escapeHtml(senderName)}</strong> escreveu:</p>
+                        <p style="color: #1e293b; margin: 0;">${escapeHtml(messagePreview)}</p>
                     </div>
                     <div style="margin-top: 20px; text-align: center;">
                         <a href="#" style="background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Responder</a>
@@ -117,15 +129,15 @@ export const emailTemplates = {
     }),
 
     ticketCompleted: (ticketTitle: string, technicianName: string) => ({
-        subject: `✅ Chamado Concluído: ${ticketTitle}`,
+        subject: `✅ Chamado Concluído: ${escapeHtml(ticketTitle)}`,
         html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                 <div style="background: linear-gradient(135deg, #10b981, #047857); padding: 20px; border-radius: 10px 10px 0 0;">
                     <h1 style="color: white; margin: 0; font-size: 24px;">✅ Chamado Concluído</h1>
                 </div>
                 <div style="background: #f8fafc; padding: 20px; border: 1px solid #e2e8f0;">
-                    <h2 style="color: #1e293b; margin-top: 0;">${ticketTitle}</h2>
-                    <p style="color: #475569;">Seu chamado foi concluído por <strong>${technicianName}</strong>.</p>
+                    <h2 style="color: #1e293b; margin-top: 0;">${escapeHtml(ticketTitle)}</h2>
+                    <p style="color: #475569;">Seu chamado foi concluído por <strong>${escapeHtml(technicianName)}</strong>.</p>
                     <div style="background: #dcfce7; border-radius: 10px; padding: 20px; text-align: center; margin: 20px 0;">
                         <p style="color: #166534; margin: 0 0 10px 0;">Por favor, avalie o atendimento:</p>
                         <div style="font-size: 30px;">⭐⭐⭐⭐⭐</div>
@@ -177,9 +189,7 @@ export const notifyByEmail = {
         location: string
     ) => {
         const template = emailTemplates.ticketCreated(ticketTitle, ticketId, requesterName, location);
-        for (const email of technicianEmails) {
-            await queueEmail({ to: email, ...template });
-        }
+        await Promise.all(technicianEmails.map(email => queueEmail({ to: email, ...template })));
     },
 
     statusChanged: async (

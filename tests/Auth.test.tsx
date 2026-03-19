@@ -63,7 +63,7 @@ describe('Auth Component', () => {
             target: { value: 'João Silva' }
         });
         fireEvent.change(screen.getByPlaceholderText('exemplo@hospital.com'), {
-            target: { value: 'joao@hospital.com' }
+            target: { value: 'joao@hospitaldeilheus.com.br' }
         });
         fireEvent.change(screen.getByPlaceholderText('••••••••'), {
             target: { value: 'pass123' }
@@ -72,10 +72,30 @@ describe('Auth Component', () => {
 
         await waitFor(() => {
             expect(mockSupabase.auth.signUp).toHaveBeenCalledWith({
-                email: 'joao@hospital.com',
+                email: 'joao@hospitaldeilheus.com.br',
                 password: 'pass123',
                 options: { data: { full_name: 'João Silva' } }
             });
+        });
+    });
+
+    it('should reject signup with non-corporate email', async () => {
+        render(<Auth onSuccess={mockOnSuccess} />);
+        fireEvent.click(screen.getByText('Criar Conta'));
+
+        fireEvent.change(screen.getByPlaceholderText('Seu nome'), {
+            target: { value: 'Test User' }
+        });
+        fireEvent.change(screen.getByPlaceholderText('exemplo@hospital.com'), {
+            target: { value: 'test@gmail.com' }
+        });
+        fireEvent.change(screen.getByPlaceholderText('••••••••'), {
+            target: { value: 'pass123' }
+        });
+        fireEvent.submit(screen.getByPlaceholderText('••••••••').closest('form')!);
+
+        await waitFor(() => {
+            expect(screen.getByText(/Apenas emails corporativos/)).toBeDefined();
         });
     });
 
@@ -109,7 +129,7 @@ describe('Auth Component', () => {
             target: { value: 'Test User' }
         });
         fireEvent.change(screen.getByPlaceholderText('exemplo@hospital.com'), {
-            target: { value: 'test@hospital.com' }
+            target: { value: 'test@hospitaldeilheus.com.br' }
         });
         fireEvent.change(screen.getByPlaceholderText('••••••••'), {
             target: { value: 'pass123' }

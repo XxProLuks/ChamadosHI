@@ -20,21 +20,7 @@ import notifyByEmail from './lib/emailService';
 import { useTickets } from './hooks/useTickets';
 import { useGlobalAlerts } from './hooks/useGlobalAlerts';
 import { useNotifications } from './hooks/useNotifications';
-
-// Debounce utility for search
-const useDebounce = <T,>(value: T, delay: number): T => {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-
-  return debouncedValue;
-};
+import { useDebounce } from './hooks/useDebounce';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
