@@ -301,6 +301,7 @@ const App: React.FC = () => {
               onSearchChange={setSearchQuery}
               hasMore={hasMore}
               onLoadMore={fetchNextPage}
+              currentUserId={session?.user?.id}
             />
           )
         )}

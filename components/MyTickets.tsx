@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Ticket, TicketStatus } from '../types';
 import { Clock, CheckCircle2, Wrench, MapPin, ChevronRight, Inbox, AlertCircle, Receipt } from 'lucide-react';
+import ProgressBar from './ProgressBar';
+import SLABadge from './SLABadge';
 
 interface MyTicketsProps {
     tickets: Ticket[];
@@ -106,6 +108,7 @@ const MyTickets: React.FC<MyTicketsProps> = ({ tickets, onViewDetails, requester
                                                 URGENTE
                                             </span>
                                         )}
+                                        <SLABadge deadline={ticket.sla_deadline} ticketStatus={ticket.status} />
                                     </div>
                                     <h4 className="text-lg font-black text-slate-800 truncate group-hover:text-blue-600 transition-colors mb-2">
                                         {ticket.title}
@@ -119,6 +122,9 @@ const MyTickets: React.FC<MyTicketsProps> = ({ tickets, onViewDetails, requester
                                             <Clock size={14} className="text-slate-300" />
                                             {new Date(ticket.created_at).toLocaleDateString('pt-BR')}
                                         </span>
+                                    </div>
+                                    <div className="mt-3">
+                                        <ProgressBar status={ticket.status} />
                                     </div>
                                 </div>
                                 <div className="flex items-center self-center text-slate-300 group-hover:text-blue-500 transition-all group-hover:translate-x-1">

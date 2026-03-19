@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Ticket } from '../types';
+import TechnicianWorkload from './TechnicianWorkload';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -134,6 +135,8 @@ const Dashboard: React.FC<DashboardProps> = ({ tickets }) => {
                     {/* Static Filters or Actions can go here */}
                 </div>
             </div>
+
+            <TechnicianWorkload tickets={tickets} />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 

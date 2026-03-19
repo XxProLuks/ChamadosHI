@@ -15,6 +15,7 @@ import {
   Loader2,
   Pin
 } from 'lucide-react';
+import SLABadge from './SLABadge';
 
 interface TecnicoViewProps {
   tickets: Ticket[];
@@ -25,6 +26,7 @@ interface TecnicoViewProps {
   onSearchChange: (query: string) => void;
   hasMore?: boolean;
   onLoadMore?: () => void;
+  currentUserId?: string;
 }
 
 const statusConfig: Record<TicketStatus, { title: string; color: string; icon: any }> = {
@@ -41,10 +43,15 @@ const priorityConfig: Record<Priority, { color: string; label: string }> = {
   CRITICAL: { color: 'bg-rose-100 text-rose-700', label: 'Crítica' }
 };
 
-const TecnicoView: React.FC<TecnicoViewProps> = ({ tickets, onUpdateStatus, onViewDetails, onPinTicket, searchQuery, onSearchChange, hasMore, onLoadMore }) => {
+const TecnicoView: React.FC<TecnicoViewProps> = ({ tickets, onUpdateStatus, onViewDetails, onPinTicket, searchQuery, onSearchChange, hasMore, onLoadMore, currentUserId }) => {
+  const [showMyOnly, setShowMyOnly] = useState(false);
 
   const filteredTickets = useMemo(() => {
     let result = tickets;
+
+    if (showMyOnly && currentUserId) {
+      result = result.filter(t => t.technician_id === currentUserId);
+    }
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -65,7 +72,7 @@ const TecnicoView: React.FC<TecnicoViewProps> = ({ tickets, onUpdateStatus, onVi
     });
 
     return result;
-  }, [tickets, searchQuery]);
+  }, [tickets, searchQuery, showMyOnly, currentUserId]);
 
   const onDragEnd = (result: DropResult) => {
     const { destination, draggableId } = result;
@@ -132,6 +139,13 @@ const TecnicoView: React.FC<TecnicoViewProps> = ({ tickets, onUpdateStatus, onVi
           </div>
 
           <div className="flex gap-4 w-full lg:w-auto overflow-x-auto pb-2 no-scrollbar">
+            <button
+              onClick={() => setShowMyOnly(!showMyOnly)}
+              className={`flex items-center gap-2.5 h-12 px-6 rounded-2xl text-xs font-black transition-all ${showMyOnly ? 'bg-blue-600 text-white shadow-xl shadow-blue-200' : 'bg-white text-slate-500 border border-slate-200 hover:border-blue-300 hover:text-blue-600'}`}
+            >
+              <User size={18} />
+              MEUS CHAMADOS
+            </button>
             <div className="flex items-center gap-2.5 h-12 px-6 rounded-2xl text-xs font-black bg-blue-600 text-white shadow-xl shadow-blue-200">
               <LayoutKanban size={18} />
               PAINEL KANBAN
@@ -189,6 +203,7 @@ const TecnicoView: React.FC<TecnicoViewProps> = ({ tickets, onUpdateStatus, onVi
                                         CRÍTICO
                                       </span>
                                     )}
+                                    <SLABadge deadline={ticket.sla_deadline} ticketStatus={ticket.status} />
                                   </div>
                                   <div className="flex items-center gap-2">
                                     {onPinTicket && (
